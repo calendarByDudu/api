@@ -48,7 +48,20 @@ model User {
   couple        Couple?           @relation(fields: [coupleId], references: [id], onDelete: SetNull)
   invite        CoupleInvite?
   passwordReset PasswordResetOtp?
+  refreshTokens RefreshToken[]
   events        Event[]
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  tokenHash String   @unique
+  userId    String   @db.Uuid
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // Max 2 members, enforced in app.
@@ -72,6 +85,7 @@ model CoupleInvite {
 model PasswordResetOtp {
   userId    String   @id @db.Uuid
   codeHash  String
+  attempts  Int      @default(0)
   expiresAt DateTime
   createdAt DateTime @default(now())
 
