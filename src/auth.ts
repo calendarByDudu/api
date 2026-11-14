@@ -1,7 +1,14 @@
 import { createHash, randomBytes, randomInt, scrypt, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
-import type { FastifyInstance, FastifyReply } from "fastify";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { prisma } from "./db.js";
+
+declare module "@fastify/jwt" {
+  interface FastifyJWT {
+    payload: { sub: string };
+    user: { sub: string };
+  }
+}
 
 const scryptAsync = promisify(scrypt) as (pw: string, salt: Buffer, len: number) => Promise<Buffer>;
 const OTP_TTL_MS = 10 * 60 * 1000;
@@ -28,8 +35,16 @@ async function checkPassword(pw: string, stored: string) {
 const sha256 = (s: string) => createHash("sha256").update(s).digest();
 const normalize = (e: string) => e.trim().toLowerCase();
 
-const fail = (reply: FastifyReply, status: number, code: string, message: string) =>
+export const fail = (reply: FastifyReply, status: number, code: string, message: string) =>
   reply.code(status).send({ error: { code, message } });
+
+export async function authenticate(req: FastifyRequest, reply: FastifyReply) {
+  try {
+    await req.jwtVerify();
+  } catch {
+    return fail(reply, 401, "UNAUTHORIZED", "Sessão expirada. Entre novamente.");
+  }
+}
 
 // shortcut: OTP only goes to the log, plug a real e-mail provider before production.
 function sendOtpEmail(app: FastifyInstance, to: string, otp: string) {
@@ -123,13 +138,8 @@ export async function authRoutes(app: FastifyInstance) {
     },
   );
 
-  app.get("/auth/me", async (req, reply) => {
-    try {
-      await req.jwtVerify();
-    } catch {
-      return fail(reply, 401, "UNAUTHORIZED", "Sessão expirada. Entre novamente.");
-    }
-    const user = await prisma.user.findUnique({ where: { id: (req.user as { sub: string }).sub } });
+  app.get("/auth/me", { preHandler: authenticate }, async (req, reply) => {
+    const user = await prisma.user.findUnique({ where: { id: req.user.sub } });
     if (!user) return fail(reply, 401, "UNAUTHORIZED", "Sessão expirada. Entre novamente.");
     return publicUser(user);
   });

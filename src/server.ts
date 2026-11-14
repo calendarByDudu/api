@@ -3,8 +3,16 @@ import Fastify, { type FastifyError } from "fastify";
 import jwt from "@fastify/jwt";
 import { prisma } from "./db.js";
 import { authRoutes } from "./auth.js";
+import { coupleRoutes } from "./couple.js";
 
 const app = Fastify({ logger: true });
+
+// Clients send Content-Type: application/json with no body on bodyless POSTs (e.g. /couple/invite).
+const json = app.getDefaultJsonParser("error", "error");
+app.removeContentTypeParser("application/json");
+app.addContentTypeParser("application/json", { parseAs: "string" }, (req, body, done) =>
+  body === "" ? done(null, undefined) : json(req, body as string, done),
+);
 
 await app.register(jwt, { secret: process.env.JWT_SECRET!, sign: { expiresIn: "15m" } });
 
@@ -21,6 +29,7 @@ app.get("/health", async () => {
 });
 
 await app.register(authRoutes);
+await app.register(coupleRoutes);
 
 app.addHook("onClose", () => prisma.$disconnect());
 
