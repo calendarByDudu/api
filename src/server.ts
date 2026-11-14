@@ -4,6 +4,7 @@ import jwt from "@fastify/jwt";
 import { prisma } from "./db.js";
 import { authRoutes } from "./auth.js";
 import { coupleRoutes } from "./couple.js";
+import { eventRoutes } from "./events.js";
 
 const app = Fastify({ logger: true });
 
@@ -30,6 +31,7 @@ app.get("/health", async () => {
 
 await app.register(authRoutes);
 await app.register(coupleRoutes);
+await app.register(eventRoutes);
 
 app.addHook("onClose", () => prisma.$disconnect());
 

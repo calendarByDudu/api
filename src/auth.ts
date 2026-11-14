@@ -52,10 +52,11 @@ function sendOtpEmail(app: FastifyInstance, to: string, otp: string) {
 }
 
 export async function authRoutes(app: FastifyInstance) {
-  const publicUser = (user: { id: string; name: string; email: string }) => ({
+  const publicUser = (user: { id: string; name: string; email: string; coupleId: string | null }) => ({
     id: user.id,
     name: user.name,
     email: user.email,
+    coupleId: user.coupleId,
   });
 
   async function session(user: { id: string; name: string; email: string }) {
