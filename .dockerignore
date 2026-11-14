@@ -1,0 +1,11 @@
+node_modules
+dist
+generated
+.env
+.git
+.github
+.agents
+.windsurf
+.claude
+*.md
+skills-lock.json
