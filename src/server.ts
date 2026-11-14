@@ -1,5 +1,6 @@
 import "dotenv/config";
 import Fastify, { type FastifyError } from "fastify";
+import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
 import { prisma } from "./db.js";
 import { authRoutes } from "./auth.js";
@@ -15,6 +16,9 @@ app.addContentTypeParser("application/json", { parseAs: "string" }, (req, body, 
   body === "" ? done(null, undefined) : json(req, body as string, done),
 );
 
+await app.register(cors, {
+  origin: process.env.CORS_ORIGIN!.split(",").map((o) => o.trim()),
+});
 await app.register(jwt, { secret: process.env.JWT_SECRET!, sign: { expiresIn: "15m" } });
 
 app.setErrorHandler<FastifyError>((err, _req, reply) => {
