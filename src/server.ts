@@ -18,6 +18,7 @@ app.addContentTypeParser("application/json", { parseAs: "string" }, (req, body, 
 
 await app.register(cors, {
   origin: process.env.CORS_ORIGIN!.split(",").map((o) => o.trim()),
+  methods: ["GET", "HEAD", "POST", "PATCH", "DELETE", "OPTIONS"],
 });
 await app.register(jwt, { secret: process.env.JWT_SECRET!, sign: { expiresIn: "15m" } });
 
